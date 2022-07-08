@@ -9,7 +9,8 @@ module.exports = {
     'google',
   ],
   rules: {
-    'quotes': ['error', 'single'],
-    'object-curly-spacing': ["error", "always"]
+    'max-len': ['error', { 'code': 150 }],
+    'object-curly-spacing': ['error', 'always'],
+    'quotes': ['error', 'single']
   },
 };
