@@ -28,5 +28,7 @@ firebase functions:secrets:set SECRET_NAME
 ```
 
 ### Customize configuration
+
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
 See [The Movie DB API](https://developers.themoviedb.org/3/getting-started/introduction)

@@ -1,15 +1,15 @@
 <template>
   <h1>Shared cast for movie selection</h1>
-  <input class='search-input' v-model='search' @keydown='searchMovie' placeholder='Start by typing a movie name ...' />
+  <div class='input-container'>
+    <input class='search-input' v-model='search' @keydown='searchMovie' placeholder='Start by typing a movie name ...' />
+    <LoadingSpinner v-if='loading' />
+  </div>
 
   <div v-bind:class='["half-width", { "single": movieList.length === 0 }]'>
     <div v-if='suggestMovieList.length > 0'>
       <h2>Choose from the search results</h2>
       <ul>
-        <li class='movie-item' v-for='movie in suggestMovieList' :key='movie.id' @click='selectMovie(movie)'>
-          <div class='movie-avatar' v-bind:style='{ "background-image": `url(https://image.tmdb.org/t/p/w500/${movie.poster_path})`}'></div>
-          {{movie.original_title}}
-        </li>
+        <MovieThumb v-for='movie in suggestMovieList' :key='movie.id' :movie='movie' :click='selectMovie' />
       </ul>
     </div>
   </div>
@@ -18,10 +18,7 @@
     <div v-if='movieList.length > 0'>
       <h2>For selected movies</h2>
       <ul>
-        <li class='movie-item' v-for='movie in movieList' :key='movie.id' @click='deselectMovie(movie)'>
-          <div class='movie-avatar' v-bind:style='{ "background-image": `url(https://image.tmdb.org/t/p/w500/${movie.poster_path})`}'></div>
-          {{movie.original_title}}
-        </li>
+        <MovieThumb v-for='movie in movieList' :key='movie.id' :movie='movie' :click='deselectMovie' />
       </ul>
     </div>
 
@@ -29,31 +26,37 @@
       <h2>Shared cast</h2>
       <p v-if='sharedCast.length === 0'>No shared cast :(</p>
       <ul v-if='sharedCast.length > 0'>
-        <li class='cast-member' v-for='cast in sharedCast' :key='cast.id'>
-          <div class='cast-avatar' v-bind:style='{ "background-image": `url(https://image.tmdb.org/t/p/w200/${cast.profile_path})`}'></div>
-          {{cast.original_name}}
-        </li>
+        <CastThumb v-for:='cast in sharedCast' :key='cast.id' :cast='cast' />
       </ul>
     </div>
   </div>
 </template>
 
 <script>
-  import { getFunctions, httpsCallable } from 'firebase/functions';
+  import invokeFunction from '../helper/invokeFunction';
+
+  import CastThumb from './CastThumb.vue';
+  import LoadingSpinner from './LoadingSpinner.vue';
+  import MovieThumb from './MovieThumb.vue'
 
   export default {
+    components: {
+      CastThumb,
+      LoadingSpinner,
+      MovieThumb
+    },
     computed: {
       sharedCast () {
         if (this.movieList.length <= 1) return [];
-        const sharedCast = this.movieList.reduce((sharedCast, movie, index) => {
+        return this.movieList.reduce((sharedCast, movie, index) => {
           if (index === 0) return movie.cast;
           return sharedCast.filter(sharedCastMember => movie.cast.some(movieCastMember => movieCastMember.id === sharedCastMember.id));
         }, []);
-        return sharedCast;
       }
     },
     data() {
       return {
+        loading: false,
         movieList: [],
         search: '',
         suggestMovieList: [],
@@ -71,10 +74,10 @@
         }
         this.timeout = setTimeout(() => {
           if (this.search.trim()) {
-            const functions = getFunctions();
-            const searchMovie = httpsCallable(functions, 'searchMovie');
-            return searchMovie({ search: this.search }).then(response => {
+            this.loading = true;
+            return invokeFunction('searchMovie', { search: this.search }).then(response => {
               this.suggestMovieList = response.data.results.filter(movie => movie.poster_path);
+              this.loading = false;
             });
           } else {
             this.suggestMovieList = [];
@@ -82,9 +85,10 @@
         }, 500);
       },
       selectMovie (movie) {
-        const functions = getFunctions();
-        const getCastForMovieId = httpsCallable(functions, 'getCastForMovieId');
-        return getCastForMovieId({ movieId: movie.id }).then(response => {
+        if (this.movieList.some(mov => mov.id === movie.id)) return;
+        this.loading = true;
+        return invokeFunction('getCastForMovieId', { movieId: movie.id }).then(response => {
+          this.loading = false;
           this.movieList.push({ ...movie, cast: response.data.cast });
         });
       }
@@ -98,8 +102,14 @@
     margin: 0;
     padding: 0;
   }
-  .search-input {
+  .input-container {
+    position: relative;
     width: 50%;
+    margin: 0 auto;
+  }
+  .search-input {
+    width: 100%;
+    box-sizing: border-box;
     padding: 10px 20px;
     border-radius: 20px;
   }
@@ -112,38 +122,5 @@
   }
   .half-width.single {
     width: 95%;
-  }
-  .movie-item {
-    cursor: pointer;
-    display: inline-block;
-    vertical-align: top;
-    height: 220px;
-    overflow: hidden;
-    width: 150px;
-    margin: 10px;
-  }
-  .movie-avatar {
-    width: 150px;
-    height: 150px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 50%;
-    margin-bottom: 20px;
-  }
-  .cast-member {
-    display: inline-block;
-    width: 75px;
-    height: 140px;
-    vertical-align: top;
-    overflow: hidden;
-    margin: 0 10px 10px;
-  }
-  .cast-avatar {
-    width: 75px;
-    height: 75px;
-    background-size: cover;
-    background-position: center;
-    margin-bottom: 10px;
-    border-radius: 50%;
   }
 </style>
