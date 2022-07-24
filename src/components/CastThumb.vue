@@ -1,14 +1,19 @@
 <template>
-  <li class='cast-member'>
-    <div class='cast-avatar' v-bind:style='{ "background-image": `url(https://image.tmdb.org/t/p/w200/${cast.profile_path})`}'></div>
-    {{cast.original_name}}
+  <li :class='["cast-member", { "clickable": this.click }]' @click='this.select'>
+    <div class='cast-avatar' :style='{ backgroundImage: `url(https://image.tmdb.org/t/p/w200/${cast.profile_path})`}' />
+    {{cast.name}}
   </li>
 </template>
 
 <script>
   export default {
     name: 'CastThumb',
-    props: ['cast']
+    props: ['cast', 'click'],
+    methods: {
+      select() {
+        if (this.click) this.click(this.cast);
+      }
+    }
   }
 </script>
 
@@ -20,6 +25,9 @@
     vertical-align: top;
     overflow: hidden;
     margin: 0 10px 10px;
+  }
+  .cast-member.clickable {
+    cursor: pointer;
   }
   .cast-avatar {
     width: 75px;

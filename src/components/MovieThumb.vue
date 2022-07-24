@@ -1,6 +1,6 @@
 <template>
-  <li class='movie-item' @click='this.select'>
-    <div class='movie-avatar' v-bind:style='{ "background-image": `url(https://image.tmdb.org/t/p/w500/${movie.poster_path})`}'></div>
+  <li :class='["movie-item", { "clickable": this.click }]' @click='this.select'>
+    <div class='movie-avatar' :style='{ backgroundImage: `url(https://image.tmdb.org/t/p/w500/${movie.poster_path})`}' />
     {{movie.original_title}} ({{releaseYear}})
   </li>
 </template>
@@ -17,7 +17,7 @@
     },
     methods: {
       select () {
-        this.click(this.movie);
+        if (this.click) this.click(this.movie);
       }
     }
   }
@@ -25,13 +25,15 @@
 
 <style>
   .movie-item {
-    cursor: pointer;
     display: inline-block;
     vertical-align: top;
     height: 225px;
     overflow: hidden;
     width: 150px;
     margin: 10px;
+  }
+  .movie-item.clickable {
+    cursor: pointer;
   }
   .movie-avatar {
     width: 150px;
