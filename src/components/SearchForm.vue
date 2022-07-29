@@ -26,34 +26,38 @@
       </div>
     </div>
 
-    <div class='half-width'>
+    <div :class='["half-width", { "single": suggestMovieList.length === 0 && suggestCastList.length === 0 }]'>
       <div v-if='movieList.length > 0'>
-        <h2>For selected movies</h2>
+        <h2>Selected movies</h2>
         <ul>
           <MovieThumb v-for='movie in movieList' :key='movie.id' :movie='movie' :click='deselectMovie' />
         </ul>
       </div>
 
       <div v-if='castList.length > 0'>
-        <h2>For selected cast</h2>
+        <h2>Selected cast</h2>
         <ul>
           <CastThumb v-for='cast in castList' :key='cast.id' :cast='cast' :click='deselectCast' />
         </ul>
       </div>
 
-      <div v-if='movieList.length > 1'>
-        <h2>Shared cast</h2>
+      <div v-if='movieList.length > 0'>
+        <h2 v-if='movieList.length > 1'>Share cast</h2>
+        <h2 v-else>Cast</h2>
+
         <p v-if='sharedCast.length === 0'>No shared cast :(</p>
         <ul v-if='sharedCast.length > 0'>
-          <CastThumb v-for='cast in sharedCast' :key='cast.id' :cast='cast' />
+          <CastThumb v-for='cast in sharedCast' :key='cast.id' :cast='cast' :click='selectCast' />
         </ul>
       </div>
 
-      <div v-if='castList.length > 1'>
-        <h2>Shared movie</h2>
+      <div v-if='castList.length > 0'>
+        <h2 v-if='castList.length > 1'>Share movies</h2>
+        <h2 v-else>Casted in movies</h2>
+
         <p v-if='sharedMovie.length === 0'>No shared movie :(</p>
         <ul v-if='sharedMovie.length > 0'>
-          <MovieThumb v-for='movie in sharedMovie' :key='movie.id' :movie='movie' />
+          <MovieThumb v-for='movie in sharedMovie' :key='movie.id' :movie='movie' :click='selectMovie' />
         </ul>
       </div>
     </div>
@@ -83,14 +87,16 @@
         return `Start by typing a ${this.selectedTab} name ...`;
       },
       sharedCast () {
-        if (this.movieList.length <= 1) return [];
+        if (this.movieList.length === 0) return [];
+        if (this.movieList.length === 1) return this.movieList[0].cast;
         return this.movieList.reduce((sharedCast, movie, index) => {
           if (index === 0) return movie.cast;
           return sharedCast.filter(sharedCastMember => sharedCastMember.profile_path && movie.cast.some(movieCastMember => movieCastMember.id === sharedCastMember.id));
         }, []);
       },
       sharedMovie () {
-        if (this.castList.length <= 1) return [];
+        if (this.castList.length === 0) return [];
+        if (this.castList.length === 1) return this.castList[0].cast;
         return this.castList.reduce((sharedMovie, cast, index) => {
           if (index === 0) return cast.cast;
           return sharedMovie.filter(sharedCastMovie => sharedCastMovie.poster_path && cast.cast.some(castCastMovie => castCastMovie.id === sharedCastMovie.id));
@@ -155,6 +161,7 @@
         this.loading = true;
         return invokeFunction('getMovieForPersonId', { personId: cast.id }).then(response => {
           this.loading = false;
+          if (this.selectedTab === 'movie') this.selectTab('cast');
           this.castList.push({ ...cast, cast: response.data.cast });
         });
       },
@@ -163,6 +170,7 @@
         this.loading = true;
         return invokeFunction('getCastForMovieId', { movieId: movie.id }).then(response => {
           this.loading = false;
+          if (this.selectedTab === 'cast') this.selectTab('movie');
           this.movieList.push({ ...movie, cast: response.data.cast });
         });
       },
