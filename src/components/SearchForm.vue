@@ -54,6 +54,7 @@
       <div v-if='castList.length > 0'>
         <h2 v-if='castList.length > 1'>Share movies</h2>
         <h2 v-else>Casted in movies</h2>
+        <p>Sorted by <TextDropdown :value='movieSort' :optionList='movieSortList' :click='movieSortSelect' /> in <TextDropdown :value='movieSortDirection' :optionList='movieSortDirectionList' :click='movieSortDirectionSelect' /> order</p>
 
         <p v-if='sharedMovie.length === 0'>No shared movie :(</p>
         <ul v-if='sharedMovie.length > 0'>
@@ -65,6 +66,8 @@
 </template>
 
 <script>
+  import * as R from 'ramda';
+
   import invokeFunction from '../helper/invokeFunction';
   import TextLib from '../helper/textLib';
 
@@ -72,6 +75,7 @@
   import LoadingSpinner from './LoadingSpinner.vue';
   import MovieThumb from './MovieThumb.vue';
   import TabSwitch from './TabSwitch.vue';
+  import TextDropdown from './TextDropdown.vue';
   import TutorialVeil from './TutorialVeil.vue';
 
   export default {
@@ -80,6 +84,7 @@
       LoadingSpinner,
       MovieThumb,
       TabSwitch,
+      TextDropdown,
       TutorialVeil
     },
     computed: {
@@ -95,12 +100,30 @@
         }, []);
       },
       sharedMovie () {
-        if (this.castList.length === 0) return [];
-        if (this.castList.length === 1) return this.castList[0].cast;
-        return this.castList.reduce((sharedMovie, cast, index) => {
-          if (index === 0) return cast.cast;
-          return sharedMovie.filter(sharedCastMovie => sharedCastMovie.poster_path && cast.cast.some(castCastMovie => castCastMovie.id === sharedCastMovie.id));
-        }, []);
+        const getSharedMovieList = () => {
+          if (this.castList.length === 0) return [];
+          if (this.castList.length === 1) return this.castList[0].cast;
+          return this.castList.reduce((sharedMovie, cast, index) => {
+            if (index === 0) return cast.cast;
+            return sharedMovie.filter(sharedCastMovie => sharedCastMovie.poster_path && cast.cast.some(castCastMovie => castCastMovie.id === sharedCastMovie.id));
+          }, []);
+        };
+        const getSortProp = () => {
+          switch (this.movieSort) {
+            case 'year':
+              return 'release_date';
+            case 'name':
+              return 'title';
+            default: // Note: relevance
+              return null;
+          }
+        }
+        const sortProp = getSortProp();
+        const sharedMovieList = getSharedMovieList();
+        const isDesc = this.movieSortDirection === 'descending';
+        const sortedMovieList = sortProp ? R.sortBy(R.prop(sortProp), sharedMovieList) : sharedMovieList;
+        const directionSortedMovieList = isDesc ? R.reverse(sortedMovieList) : sortedMovieList;
+        return directionSortedMovieList;
       }
     },
     data() {
@@ -108,6 +131,10 @@
         loading: false,
         castList: [],
         movieList: [],
+        movieSortDirection: 'ascending',
+        movieSortDirectionList: ['descending', 'ascending'],
+        movieSort: 'relevance',
+        movieSortList: ['relevance', 'year', 'name'],
         search: '',
         searchTimeout: null,
         selectedTab: 'movie',
@@ -128,6 +155,12 @@
       },
       deselectMovie (movie) {
         this.movieList = this.movieList.filter(item => item.id !== movie.id);
+      },
+      movieSortSelect (option) {
+        this.movieSort = option;
+      },
+      movieSortDirectionSelect (option) {
+        this.movieSortDirection = option;
       },
       resetTutorialTimeout () {
         this.tutorial = false;
