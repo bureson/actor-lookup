@@ -38,6 +38,9 @@
     cursor: pointer;
     transition: all 0.2s ease;
   }
+  .dark .tabs-container ul li {
+    color: #000;
+  }
   .tabs-container ul li:first-child{
     border-top-left-radius: 25px;
     border-bottom-left-radius: 25px;

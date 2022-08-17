@@ -1,6 +1,6 @@
 <template>
-  <span class='text-drop-down' @mouseout='closeMenu' @mouseover='persistMenu'>
-    <span @click='toggleMenu'>{{value}}</span>
+  <span class='text-drop-down' @click='openMenu' @mouseout='closeMenu' @mouseover='persistMenu'>
+    <span>{{value}}</span>
     <ul v-if='open'>
       <li v-for='option in optionList' :key='option' @click='() => this.click(option)'>{{option}}</li>
     </ul>
@@ -14,25 +14,25 @@
     data () {
       return {
         open: false,
-        timeout: null
+        closeTimeout: null
       };
     },
     methods: {
       closeMenu () {
-        this.timeout = setTimeout(() => {
+        this.closeTimeout = setTimeout(() => {
           this.open = false;
         }, 100);
       },
       persistMenu () {
-        if (this.timeout) clearTimeout(this.timeout);
+        if (this.closeTimeout) clearTimeout(this.closeTimeout);
         this.open = true;
       },
       selectOption (option) {
         this.open = false;
         this.click(option);
       },
-      toggleMenu () {
-        this.open = !this.open;
+      openMenu () {
+        this.open = true;
       }
     }
   }
@@ -53,6 +53,9 @@
     left: 0;
     background: #fff;
     top: 20px;
+  }
+  .dark .text-drop-down ul {
+    background: #333;
   }
   .text-drop-down ul li {
     padding: 2px 5px;

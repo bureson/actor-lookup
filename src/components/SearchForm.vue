@@ -1,12 +1,17 @@
 <template>
-  <div :class='["container", { "tutorial": this.tutorial }]' @click='resetTutorialTimeout' @keydown='resetTutorialTimeout'>
+  <div :class='["container", { "tutorial": this.tutorial, "dark": this.darkMode }]' @click='resetTutorialTimeout' @keydown='resetTutorialTimeout'>
     <h1>ACTOR &amp; MOVIE LOOKUP</h1>
 
     <TutorialVeil :tutorial='tutorial' />
     <TabSwitch :selectedTab='selectedTab' :click='selectTab' />
 
+    <div class='dark-mode-switch'>
+      <a href='#' v-if='darkMode' @click='toggleDarkMode'>☀️</a>
+      <a href='#' v-else @click='toggleDarkMode'>🌙</a>
+    </div>
+
     <div class='input-container'>
-      <input class='search-input' v-model='search' @keydown='triggerSearch' :placeholder='placeholder' />
+      <input class='search-input' v-model='search' @keydown='triggerSearch' :placeholder='placeholder' autofocus />
       <LoadingSpinner v-if='loading' />
     </div>
 
@@ -32,6 +37,9 @@
         <ul>
           <MovieThumb v-for='movie in movieList' :key='movie.id' :movie='movie' :click='deselectMovie' />
         </ul>
+        <div v-if='movieList.length === 1'>
+          <p>{{movieList[0].overview}}</p>
+        </div>
       </div>
 
       <div v-if='castList.length > 0'>
@@ -57,9 +65,9 @@
         <p>Sorted by <TextDropdown :value='movieSort' :optionList='movieSortList' :click='movieSortSelect' /> in <TextDropdown :value='movieSortDirection' :optionList='movieSortDirectionList' :click='movieSortDirectionSelect' /> order</p>
 
         <p v-if='sharedMovie.length === 0'>No shared movie :(</p>
-        <ul v-if='sharedMovie.length > 0'>
+        <transition-group name='flip-list' tag='ul' v-if='sharedMovie.length > 0'>
           <MovieThumb v-for='movie in sharedMovie' :key='movie.id' :movie='movie' :click='selectMovie' />
-        </ul>
+        </transition-group>
       </div>
     </div>
   </div>
@@ -120,21 +128,26 @@
         }
         const sortProp = getSortProp();
         const sharedMovieList = getSharedMovieList();
-        const isDesc = this.movieSortDirection === 'descending';
+        const isDescProp = this.movieSortDirection === 'descending';
+        const isDesc = this.movieSort === 'relevance' ? !isDescProp : isDescProp;
         const sortedMovieList = sortProp ? R.sortBy(R.prop(sortProp), sharedMovieList) : sharedMovieList;
         const directionSortedMovieList = isDesc ? R.reverse(sortedMovieList) : sortedMovieList;
         return directionSortedMovieList;
       }
     },
     data() {
+      const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const movieSortDirectionList = ['descending', 'ascending'];
+      const movieSortList = ['relevance', 'year', 'name'];
       return {
         loading: false,
         castList: [],
+        darkMode,
         movieList: [],
-        movieSortDirection: 'ascending',
-        movieSortDirectionList: ['descending', 'ascending'],
-        movieSort: 'relevance',
-        movieSortList: ['relevance', 'year', 'name'],
+        movieSortDirection: movieSortDirectionList[0],
+        movieSortDirectionList,
+        movieSort: movieSortList[0],
+        movieSortList,
         search: '',
         searchTimeout: null,
         selectedTab: 'movie',
@@ -148,6 +161,9 @@
       this.tutorialTimeout = setTimeout(() => {
         this.tutorial = true;
       }, 4000);
+    },
+    updated () {
+      // any logging comes here
     },
     methods: {
       deselectCast (cast) {
@@ -214,16 +230,31 @@
         this.selectedTab = tab;
         this.suggestCastList = [];
         this.suggestMovieList = [];
+      },
+      toggleDarkMode () {
+        this.darkMode = !this.darkMode;
       }
     }
   }
 </script>
 
 <style>
-  ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+  .container {
+    background: #fff;
+    width: 100%;
+    min-height: 100%;
+  }
+  .container.dark {
+    background: #333;
+  }
+  .dark-mode-switch {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 2em;
+  }
+  .dark-mode-switch a {
+    text-decoration: none;
   }
   .input-container {
     z-index: 3;
@@ -249,6 +280,9 @@
   }
   .half-width.single {
     width: 95%;
+  }
+  .flip-list-move {
+    transition: transform 1s;
   }
   @media (min-width:600px)  {
     .input-container {
