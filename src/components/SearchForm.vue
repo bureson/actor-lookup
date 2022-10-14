@@ -13,6 +13,7 @@
     <div class='input-container'>
       <input class='search-input' v-model='search' @keydown='triggerSearch' :placeholder='placeholder' autofocus />
       <LoadingSpinner v-if='loading' />
+      <img v-if='!loading && search' src='../assets/close.png' @click='clearSearch' />
     </div>
 
     <div :class='["half-width", { "single": movieList.length === 0 && castList.length === 0 }]'>
@@ -166,6 +167,9 @@
       // any logging comes here
     },
     methods: {
+      clearSearch () {
+        this.search = '';
+      },
       deselectCast (cast) {
         this.castList = this.castList.filter(item => item.id !== cast.id);
       },
@@ -224,12 +228,14 @@
         });
       },
       selectTab (tab) {
-        this.castList = [];
-        this.movieList = [];
-        this.search = '';
-        this.selectedTab = tab;
-        this.suggestCastList = [];
-        this.suggestMovieList = [];
+        if (this.selectedTab !== tab) {
+          this.castList = [];
+          this.movieList = [];
+          this.search = '';
+          this.selectedTab = tab;
+          this.suggestCastList = [];
+          this.suggestMovieList = [];
+        }
       },
       toggleDarkMode () {
         this.darkMode = !this.darkMode;
@@ -243,6 +249,7 @@
     background: #fff;
     width: 100%;
     min-height: 100%;
+    transition: background 1s;
   }
   .container.dark {
     background: #333;
@@ -261,6 +268,14 @@
     position: relative;
     width: 70%;
     margin: 0 auto;
+  }
+  .input-container img {
+    position: absolute;
+    right: 15px;
+    top: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
   }
   .search-input {
     width: 100%;
