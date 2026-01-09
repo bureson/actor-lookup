@@ -3,11 +3,11 @@
     <h1 @click="swap">
       SEARCH
       <Transition name="swap" mode="out-in">
-        <span :key="order[0]" class="word">{{ order[0] }}</span>
+        <span :key="selectedTab" class="word">{{ selectedTab.toUpperCase() }}</span>
       </Transition>
       TO SEE THEIR SHARED
       <Transition name="swap" mode="out-in">
-        <span :key="order[1]" class="word">{{ order[1] }}</span>
+        <span :key="theOtherTab" class="word">{{ theOtherTab.toUpperCase() }}</span>
       </Transition>
     </h1>
 
@@ -93,7 +93,6 @@
   import * as R from 'ramda';
 
   import invokeFunction from '../helper/invokeFunction';
-  import TextLib from '../helper/textLib';
 
   import CastThumb from './CastThumb.vue';
   import LoadingSpinner from './LoadingSpinner.vue';
@@ -147,11 +146,15 @@
         const sortedMovieList = sortProp ? R.sortBy(R.prop(sortProp), sharedMovieList) : sharedMovieList;
         const directionSortedMovieList = isDesc ? R.reverse(sortedMovieList) : sortedMovieList;
         return directionSortedMovieList;
+      },
+      theOtherTab () {
+        return this.tabList.find(tab => tab !== this.selectedTab);
       }
     },
     data() {
       const movieSortDirectionList = ['descending', 'ascending'];
       const movieSortList = ['relevance', 'year', 'name'];
+      const tabList = ['movies', 'actors'];
       return {
         loading: false,
         castList: [],
@@ -161,12 +164,12 @@
         movieSortDirectionList,
         movieSort: movieSortList[0],
         movieSortList,
-        order: ['MOVIES', 'ACTORS'],
         search: '',
         searchTimeout: null,
-        selectedTab: 'movie',
+        selectedTab: tabList[0],
         suggestCastList: [],
         suggestMovieList: [],
+        tabList,
         tutorial: false,
         tutorialTimeout: null
       };
@@ -206,6 +209,12 @@
       movieSortDirectionSelect (option) {
         this.movieSortDirection = option;
       },
+      resetSearch () {
+        this.isOpen = false;
+        this.search = '';
+        this.suggestCastList = [];
+        this.suggestMovieList = [];
+      },
       resetTutorialTimeout () {
         this.tutorial = false;
         if (this.tutorialTimeout) clearTimeout(this.tutorialTimeout);
@@ -218,12 +227,13 @@
           clearTimeout(this.searchTimeout);
           this.searchTimeout = null;
         }
+        const functionName = this.selectedTab === 'movies' ? 'searchMovie' : 'searchCast';
         this.searchTimeout = setTimeout(() => {
           if (this.search.trim()) {
             this.loading = true;
-            return invokeFunction(`search${TextLib.capitalize(this.selectedTab)}`, { search: this.search }).then(response => {
+            return invokeFunction(functionName, { search: this.search }).then(response => {
               this.loading = false;
-              if (this.selectedTab === 'movie') {
+              if (this.selectedTab === 'movies') {
                 this.suggestMovieList = response.data.results.filter(movie => movie.poster_path);
               } else {
                 this.suggestCastList = response.data.results.filter(cast => cast.profile_path);
@@ -239,8 +249,8 @@
         this.loading = true;
         return invokeFunction('getMovieForPersonId', { personId: cast.id }).then(response => {
           this.loading = false;
-          this.isOpen = false;
-          if (this.selectedTab === 'movie') this.selectTab('cast');
+          this.resetSearch();
+          if (this.selectedTab === 'movies') this.selectTab('actors');
           this.castList.push({ ...cast, cast: response.data.cast });
         });
       },
@@ -249,8 +259,8 @@
         this.loading = true;
         return invokeFunction('getCastForMovieId', { movieId: movie.id }).then(response => {
           this.loading = false;
-          this.isOpen = false;
-          if (this.selectedTab === 'cast') this.selectTab('movie');
+          this.resetSearch();
+          if (this.selectedTab === 'actors') this.selectTab('movies');
           this.movieList.push({ ...movie, cast: response.data.cast });
         });
       },
@@ -263,10 +273,7 @@
         this.suggestMovieList = [];
       },
       swap () {
-        const tabList = ['movie', 'cast'];
-        const [tab] = tabList.filter(tab => tab !== this.selectedTab);
-        this.order.reverse();
-        this.selectTab(tab);
+        this.selectTab(this.theOtherTab);
       }
     }
   }

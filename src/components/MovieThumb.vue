@@ -61,6 +61,7 @@
     width: calc(100% - 20px);
     display: block;
     text-align: left;
+    white-space: nowrap;
   }
   .movie-item.search-result:hover {
     background: #eee;

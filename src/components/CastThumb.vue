@@ -44,6 +44,7 @@
     width: calc(100% - 20px);
     display: block;
     text-align: left;
+    white-space: nowrap;
   }
   .cast-member.search-result:hover {
     background: #eee;
