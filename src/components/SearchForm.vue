@@ -1,5 +1,5 @@
 <template>
-  <div :class='["container", { "tutorial": this.tutorial }]' @click='resetTutorialTimeout' @keydown='resetTutorialTimeout'>
+  <div :class='["container", { "tutorial": this.tutorial, "init": this.init }]' @click='resetTutorialTimeout' @keydown='resetTutorialTimeout'>
     <h1 @click="swap">
       SEARCH
       <Transition name="swap" mode="out-in">
@@ -158,6 +158,7 @@
       return {
         loading: false,
         castList: [],
+        init: true,
         isOpen: false,
         movieList: [],
         movieSortDirection: movieSortDirectionList[0],
@@ -212,6 +213,7 @@
       resetSearch () {
         this.isOpen = false;
         this.search = '';
+        this.init = false;
         this.suggestCastList = [];
         this.suggestMovieList = [];
       },
@@ -284,6 +286,7 @@
     max-width: 960px;
     min-height: 100%;
     margin: 0 auto;
+    transition: all 1s ease;
   }
   .input-container {
     z-index: 3;
@@ -365,5 +368,10 @@
   .swap-leave-to {
     opacity: 0;
     transform: translateY(0.5em);
+  }
+  @media (min-width: 768px) {
+    .container.init {
+      padding-top: 30vh;
+    }
   }
 </style>

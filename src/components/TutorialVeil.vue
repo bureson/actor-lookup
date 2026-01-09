@@ -27,6 +27,7 @@
   }
   .tutorial-veil p {
     color: #fff;
+    font-family: "Shadows Into Light", cursive;
     font-size: 3em;
     position: absolute;
     width: 100%;
