@@ -1,14 +1,27 @@
 <template>
-  <li :class='["cast-member", { "clickable": this.click }]' @click='this.select'>
+  <li :class='["cast-member", { "clickable": this.click, "search-result": this.searchResult }]' @click='this.select'>
     <div class='cast-avatar' :style='{ backgroundImage: `url(https://image.tmdb.org/t/p/w200/${cast.profile_path})`}' />
-    {{cast.name}}
+    <div class='cast-title'>{{cast.name}}</div>
   </li>
 </template>
 
 <script>
   export default {
     name: 'CastThumb',
-    props: ['cast', 'click'],
+    props: {
+      click: {
+        type: Function,
+        required: true
+      },
+      cast: {
+        type: Object,
+        required: true
+      },
+      searchResult: {
+        type: Boolean,
+        required: false
+      }
+    },
     methods: {
       select() {
         if (this.click) this.click(this.cast);
@@ -24,12 +37,21 @@
     height: 140px;
     vertical-align: top;
     overflow: hidden;
-    margin: 0 10px 10px;
+    padding: 10px;
+  }
+  .cast-member.search-result {
+    height: 50px;
+    width: calc(100% - 20px);
+    display: block;
+    text-align: left;
+  }
+  .cast-member.search-result:hover {
+    background: #eee;
   }
   .cast-member.clickable {
     cursor: pointer;
   }
-  .cast-avatar {
+  .cast-member .cast-avatar {
     width: 75px;
     height: 75px;
     background-color: #999;
@@ -37,5 +59,21 @@
     background-position: center;
     margin-bottom: 10px;
     border-radius: 50%;
+  }
+  .cast-member.search-result .cast-avatar {
+    color: #fff;
+    display: inline-block;
+    margin-bottom: 20px;
+    width: 50px;
+    height: 50px;
+    line-height: 150px;
+  }
+  .cast-member.search-result .cast-title {
+    display: inline-block;
+    vertical-align: top;
+    color: #000;
+    height: 50px;
+    margin: 0 0 0 10px;
+    line-height: 50px;
   }
 </style>

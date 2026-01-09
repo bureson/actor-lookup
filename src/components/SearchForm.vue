@@ -1,40 +1,56 @@
 <template>
-  <div :class='["container", { "tutorial": this.tutorial, "dark": this.darkMode }]' @click='resetTutorialTimeout' @keydown='resetTutorialTimeout'>
-    <h1>ACTOR &amp; MOVIE LOOKUP</h1>
+  <div :class='["container", { "tutorial": this.tutorial }]' @click='resetTutorialTimeout' @keydown='resetTutorialTimeout'>
+    <h1 @click="swap">
+      SEARCH
+      <Transition name="swap" mode="out-in">
+        <span :key="order[0]" class="word">{{ order[0] }}</span>
+      </Transition>
+      TO SEE THEIR SHARED
+      <Transition name="swap" mode="out-in">
+        <span :key="order[1]" class="word">{{ order[1] }}</span>
+      </Transition>
+    </h1>
 
     <TutorialVeil :tutorial='tutorial' />
-    <TabSwitch :selectedTab='selectedTab' :click='selectTab' />
 
-    <div class='dark-mode-switch'>
-      <a href='#' v-if='darkMode' @click='toggleDarkMode'>☀️</a>
-      <a href='#' v-else @click='toggleDarkMode'>🌙</a>
-    </div>
-
-    <div class='input-container'>
-      <input class='search-input' v-model='search' @keydown='triggerSearch' :placeholder='placeholder' autofocus />
-      <LoadingSpinner v-if='loading' />
-      <img v-if='!loading && search' src='../assets/close.png' @click='clearSearch' />
-    </div>
-
-    <div :class='["half-width", { "single": movieList.length === 0 && castList.length === 0 }]'>
-      <div v-if='suggestMovieList.length > 0'>
-        <h2>Choose from the search results</h2>
-        <ul>
-          <MovieThumb v-for='movie in suggestMovieList' :key='movie.id' :movie='movie' :click='selectMovie' />
-        </ul>
+    <div class='search-dropdown' ref="dropdownRef">
+      <div class='input-container'>
+        <input class='search-input' v-model='search' @keydown='triggerSearch' @focus="isOpen = true" :placeholder='placeholder' autofocus />
+        <LoadingSpinner v-if='loading' />
+        <img v-if='!loading && search' src='../assets/close.png' @click='clearSearch' />
       </div>
 
-      <div v-if='suggestCastList.length > 0'>
-        <h2>Choose from the search results</h2>
-        <ul>
-          <CastThumb v-for='cast in suggestCastList' :key='cast.id' :cast='cast' :click='selectCast' />
-        </ul>
+      <div v-show="isOpen && (suggestMovieList.length || suggestCastList.length)" class='dropdown'>
+        <div class="dropdown-scroll">
+          <div v-if="suggestMovieList.length">
+            <ul>
+              <MovieThumb
+                v-for="movie in suggestMovieList"
+                :key="movie.id"
+                :movie="movie"
+                :searchResult="true"
+                :click="selectMovie"
+              />
+            </ul>
+          </div>
+
+          <div v-if="suggestCastList.length">
+            <ul>
+              <CastThumb
+                v-for="cast in suggestCastList"
+                :key="cast.id"
+                :cast="cast"
+                :searchResult="true"
+                :click="selectCast"
+              />
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div :class='["half-width", { "single": suggestMovieList.length === 0 && suggestCastList.length === 0 }]'>
+    <div class='overview'>
       <div v-if='movieList.length > 0'>
-        <h2>Selected movies</h2>
         <ul>
           <MovieThumb v-for='movie in movieList' :key='movie.id' :movie='movie' :click='deselectMovie' />
         </ul>
@@ -44,7 +60,6 @@
       </div>
 
       <div v-if='castList.length > 0'>
-        <h2>Selected cast</h2>
         <ul>
           <CastThumb v-for='cast in castList' :key='cast.id' :cast='cast' :click='deselectCast' />
         </ul>
@@ -83,7 +98,6 @@
   import CastThumb from './CastThumb.vue';
   import LoadingSpinner from './LoadingSpinner.vue';
   import MovieThumb from './MovieThumb.vue';
-  import TabSwitch from './TabSwitch.vue';
   import TextDropdown from './TextDropdown.vue';
   import TutorialVeil from './TutorialVeil.vue';
 
@@ -92,7 +106,6 @@
       CastThumb,
       LoadingSpinner,
       MovieThumb,
-      TabSwitch,
       TextDropdown,
       TutorialVeil
     },
@@ -137,18 +150,18 @@
       }
     },
     data() {
-      const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const movieSortDirectionList = ['descending', 'ascending'];
       const movieSortList = ['relevance', 'year', 'name'];
       return {
         loading: false,
         castList: [],
-        darkMode,
+        isOpen: false,
         movieList: [],
         movieSortDirection: movieSortDirectionList[0],
         movieSortDirectionList,
         movieSort: movieSortList[0],
         movieSortList,
+        order: ['MOVIES', 'ACTORS'],
         search: '',
         searchTimeout: null,
         selectedTab: 'movie',
@@ -159,9 +172,13 @@
       };
     },
     mounted() {
+      document.addEventListener('click', this.handleClickOutside);
       this.tutorialTimeout = setTimeout(() => {
         this.tutorial = true;
       }, 4000);
+    },
+    beforeUnmount() {
+      document.removeEventListener('click', this.handleClickOutside);
     },
     updated () {
       // any logging comes here
@@ -169,12 +186,19 @@
     methods: {
       clearSearch () {
         this.search = '';
+        this.suggestCastList = [];
+        this.suggestMovieList = [];
       },
       deselectCast (cast) {
         this.castList = this.castList.filter(item => item.id !== cast.id);
       },
       deselectMovie (movie) {
         this.movieList = this.movieList.filter(item => item.id !== movie.id);
+      },
+      handleClickOutside (e) {
+        if (!this.$refs.dropdownRef?.contains(e.target)) {
+          this.isOpen = false
+        }
       },
       movieSortSelect (option) {
         this.movieSort = option;
@@ -189,6 +213,7 @@
       },
       triggerSearch () {
         this.tutorial = false;
+        this.isOpen = true;
         if (this.searchTimeout) {
           clearTimeout(this.searchTimeout);
           this.searchTimeout = null;
@@ -214,6 +239,7 @@
         this.loading = true;
         return invokeFunction('getMovieForPersonId', { personId: cast.id }).then(response => {
           this.loading = false;
+          this.isOpen = false;
           if (this.selectedTab === 'movie') this.selectTab('cast');
           this.castList.push({ ...cast, cast: response.data.cast });
         });
@@ -223,22 +249,24 @@
         this.loading = true;
         return invokeFunction('getCastForMovieId', { movieId: movie.id }).then(response => {
           this.loading = false;
+          this.isOpen = false;
           if (this.selectedTab === 'cast') this.selectTab('movie');
           this.movieList.push({ ...movie, cast: response.data.cast });
         });
       },
       selectTab (tab) {
-        if (this.selectedTab !== tab) {
-          this.castList = [];
-          this.movieList = [];
-          this.search = '';
-          this.selectedTab = tab;
-          this.suggestCastList = [];
-          this.suggestMovieList = [];
-        }
+        this.castList = [];
+        this.movieList = [];
+        this.search = '';
+        this.selectedTab = tab;
+        this.suggestCastList = [];
+        this.suggestMovieList = [];
       },
-      toggleDarkMode () {
-        this.darkMode = !this.darkMode;
+      swap () {
+        const tabList = ['movie', 'cast'];
+        const [tab] = tabList.filter(tab => tab !== this.selectedTab);
+        this.order.reverse();
+        this.selectTab(tab);
       }
     }
   }
@@ -246,27 +274,13 @@
 
 <style>
   .container {
-    background: #fff;
-    width: 100%;
+    max-width: 960px;
     min-height: 100%;
-    transition: background 1s;
-  }
-  .container.dark {
-    background: #333;
-  }
-  .dark-mode-switch {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 2em;
-  }
-  .dark-mode-switch a {
-    text-decoration: none;
+    margin: 0 auto;
   }
   .input-container {
     z-index: 3;
     position: relative;
-    width: 70%;
     margin: 0 auto;
   }
   .input-container img {
@@ -286,22 +300,63 @@
   .tutorial .input-container .search-input {
     border: 2px solid #000;
   }
-  .half-width {
-    display: inline-block;
-    vertical-align: top;
-    min-height: 20px;
-    width: 45%;
-    margin: 0 2.5%;
-  }
-  .half-width.single {
-    width: 95%;
-  }
   .flip-list-move {
     transition: transform 1s;
   }
-  @media (min-width:600px)  {
-    .input-container {
-      width: 40%;
-    }
+  .search-dropdown {
+    position: relative;
+    width: 90%;
+    margin: 0 auto;
+  }
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    z-index: 10;
+
+    overflow: hidden;
+  }
+  .dropdown-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .dropdown ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .overview {
+    margin-top: 20px;
+  }
+  .word {
+    display: inline-block;
+    margin: 0 0.2em;
+  }
+  .swap-enter-active,
+  .swap-leave-active {
+    transition: all 0.4s ease;
+    position: relative;
+    display: inline-block;
+  }
+  .swap-enter-from {
+    opacity: 0;
+    transform: translateY(-0.5em);
+  }
+  .swap-enter-to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .swap-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .swap-leave-to {
+    opacity: 0;
+    transform: translateY(0.5em);
   }
 </style>
