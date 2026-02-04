@@ -254,6 +254,8 @@
           this.resetSearch();
           if (this.selectedTab === 'movies') this.selectTab('actors');
           this.castList.push({ ...cast, cast: response.data.cast });
+        }).catch(() => {
+          this.loading = false;
         });
       },
       selectMovie (movie) {
@@ -264,6 +266,8 @@
           this.resetSearch();
           if (this.selectedTab === 'actors') this.selectTab('movies');
           this.movieList.push({ ...movie, cast: response.data.cast });
+        }).catch(() => {
+          this.loading = false;
         });
       },
       selectTab (tab) {

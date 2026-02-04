@@ -1,7 +1,24 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
+export default async function invokeFunction(functionName, props = {}) {
+  const response = await fetch(`/api/${functionName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(props)
+  });
 
-export default (functionName, props) => {
-  const functions = getFunctions();
-  const firebaseFunction = httpsCallable(functions, functionName);
-  return firebaseFunction(props);
-};
+  if (!response.ok) {
+    let message = `API error (${response.status})`;
+    try {
+      const err = await response.json();
+      message = err.error || message;
+    } catch (e) {
+      console.error(e);
+    }
+    throw new Error(message);
+  }
+
+  return {
+    data: await response.json()
+  };
+}
