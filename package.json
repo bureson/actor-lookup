@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "core-js": "^3.8.3",
-    "firebase": "^12.7.0",
     "ramda": "^0.28.0",
     "vue": "^3.2.13"
   },

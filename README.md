@@ -20,10 +20,9 @@ npm run build
 npm run lint
 ```
 
-### Important Firebase functions
+### Run Vercel locally
 ```
-firebase deploy --only functions
-firebase functions:secrets:set SECRET_NAME
+vercel dev
 
 ```
 
